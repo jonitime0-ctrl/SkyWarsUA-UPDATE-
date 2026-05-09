@@ -1,0 +1,211 @@
+{
+  "entities": {
+    "DashboardStatus": {
+      "title": "DashboardStatus",
+      "description": "Global status of the SkyTrackUa dashboard",
+      "type": "object",
+      "properties": {
+        "markedAirfields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of active airfield IDs"
+        },
+        "ballisticDirs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Current ballistic threat directions"
+        },
+        "shahedThreats": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Current Shahed (UAV) threats"
+        },
+        "radioStatus": {
+          "type": "string",
+          "enum": ["НЕ АКТИВНІ", "МІНІМАЛЬНА", "АКТИВНІ"],
+          "description": "Radio frequencies status"
+        },
+        "fleetStatus": {
+          "type": "string",
+          "enum": ["В МОРІ НЕ ПЕРЕБУВАЄ", "В МОРІ ПЕРЕБУВАЄ"],
+          "description": "Fleet status"
+        },
+        "strategicStatus": {
+          "type": "string",
+          "enum": ["НЕ АКТИВНА", "МІНІМАЛЬНА", "АКТИВНА"],
+          "description": "Strategic aviation status"
+        },
+        "tacticalStatus": {
+          "type": "string",
+          "enum": ["НЕ АКТИВНА", "МІНІМАЛЬНА", "АКТИВНА"],
+          "description": "Tactical aviation status"
+        }
+      },
+      "required": ["markedAirfields", "ballisticDirs"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and roles",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isVerified": { "type": "boolean" },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "moder", "helper", "user"],
+          "description": "User role"
+        },
+        "photoURL": { "type": "string", "description": "URL to user's avatar image" },
+        "bannerUrl": { "type": "string", "description": "URL to user's profile banner image" },
+        "bannerColor": { "type": "string", "description": "Hex color for user's profile banner" },
+        "description": { "type": "string", "description": "User's bio or description" }
+      },
+      "required": ["email", "displayName", "createdAt", "isVerified", "role"]
+    },
+    "Topic": {
+      "title": "Topic",
+      "description": "Community discussion topic",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "authorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "messageCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["published", "pending_coauthors", "cancelled"] },
+        "coAuthors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "User IDs of co-authors"
+        },
+        "isEdited": {
+          "type": "boolean",
+          "description": "Whether the topic has been edited"
+        },
+        "pendingCoAuthors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "User IDs of pending co-authors"
+        },
+        "collaborationEmail": {
+          "type": "string",
+          "description": "Email for collaboration"
+        }
+      },
+      "required": ["title", "authorId", "createdAt", "messageCount"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Community message",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "authorId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "topicId": { "type": "string" },
+        "isVoice": { "type": "boolean" },
+        "audioData": { "type": "string" },
+        "replyTo": { "type": "string" }
+      },
+      "required": ["text", "authorId", "createdAt", "topicId", "isVoice"]
+    },
+    "SituationUpdate": {
+      "title": "SituationUpdate",
+      "description": "Situation update for the dashboard",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "authorEmail", "timestamp"]
+    },
+    "AdminTarget": {
+      "title": "AdminTarget",
+      "description": "Admin created targets/trajectories",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "iconUrl": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["path", "timestamp"]
+    },
+    "StoreItem": {
+      "title": "StoreItem",
+      "description": "Store item added by admins",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "string" },
+        "contactLink": { "type": "string" },
+        "image": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "price", "contactLink", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/storeItems/{itemId}": {
+      "schema": {
+        "$ref": "#/entities/StoreItem"
+      },
+      "description": "Store items available for users"
+    },
+    "/admin_targets/{targetId}": {
+      "schema": {
+        "$ref": "#/entities/AdminTarget"
+      },
+      "description": "Admin drawn maps targets"
+    },
+    "/dashboard/status": {
+      "schema": {
+        "$ref": "#/entities/DashboardStatus"
+      },
+      "description": "Singleton document storing the global dashboard state"
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "User profiles for role-based access control"
+    },
+    "/topics/{topicId}": {
+      "schema": {
+        "$ref": "#/entities/Topic"
+      },
+      "description": "Community topics"
+    },
+    "/messages/{messageId}": {
+      "schema": {
+        "$ref": "#/entities/Message"
+      },
+      "description": "Community messages"
+    },
+    "/situationUpdates/{updateId}": {
+      "schema": {
+        "$ref": "#/entities/SituationUpdate"
+      },
+      "description": "Situation updates for the dashboard"
+    },
+    "/operation_sky_participants/{userId}": {
+      "schema": {
+        "type": "object",
+        "title": "Participant",
+        "description": "Operation Sky participant data"
+      },
+      "description": "Participants in the Sky event"
+    }
+  }
+}

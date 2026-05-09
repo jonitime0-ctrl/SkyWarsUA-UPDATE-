@@ -1,0 +1,11 @@
+{
+  "name": "Remix: ПОВІТРЯНИЙ ПРОСТІР",
+  "description": "Професійний моніторинг повітряних загроз з адмін-панеллю та AI-аналітикою. Підтримка фіксації цілей через камеру.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera",
+    "geolocation",
+    "publickey-credentials-create",
+    "publickey-credentials-get"
+  ]
+}
