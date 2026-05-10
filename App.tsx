@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Component, ErrorInfo, ReactNode, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode, useMemo, useCallback, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Theme } from './types';
 import { auth, db } from './firebase';
@@ -106,6 +106,54 @@ const App: React.FC = () => {
     return sessionStorage.getItem('captchaVerified') === 'true';
   });
 
+  const [userFont, setUserFont] = useState(() => {
+    return localStorage.getItem('userCustomFont') || '';
+  });
+
+  useEffect(() => {
+    const handleFontChange = () => {
+      setUserFont(localStorage.getItem('userCustomFont') || '');
+    };
+    window.addEventListener('userFontChanged', handleFontChange);
+    return () => window.removeEventListener('userFontChanged', handleFontChange);
+  }, []);
+
+  useEffect(() => {
+    const fontId = 'user-custom-font';
+    let styleEl = document.getElementById(fontId) as HTMLStyleElement;
+    
+    if (userFont) {
+      if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = fontId;
+        document.head.appendChild(styleEl);
+      }
+      
+      // If it's a URL (starts with http) we @import it, otherwise just use it as string, or if it's base64 it's @font-face
+      if (userFont.startsWith('data:font')) {
+         styleEl.innerHTML = `
+            @font-face {
+              font-family: 'LocalUploadedFont';
+              src: url('${userFont}');
+              font-weight: normal;
+              font-style: normal;
+            }
+            body, h1, h2, h3, h4, h5, h6, p, span, a, div, button, input {
+              font-family: 'LocalUploadedFont', 'Inter', sans-serif !important;
+            }
+         `;
+      } else {
+         styleEl.innerHTML = `
+            body, h1, h2, h3, h4, h5, h6, p, span, a, div, button, input {
+              font-family: '${userFont}', 'Inter', sans-serif !important;
+            }
+         `;
+      }
+    } else if (styleEl) {
+      styleEl.remove();
+    }
+  }, [userFont]);
+
   useEffect(() => {
     localStorage.setItem('navPosition', navPosition);
   }, [navPosition]);
@@ -113,6 +161,49 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('appBrightness', brightness.toString());
   }, [brightness]);
+
+  const [bgMusic, setBgMusic] = useState(() => localStorage.getItem('bgMusic') || '');
+  const [bgMusicName, setBgMusicName] = useState(() => localStorage.getItem('bgMusicName') || '');
+  const [bgVolume, setBgVolume] = useState(() => {
+    const vol = localStorage.getItem('bgVolume');
+    return vol !== null ? parseFloat(vol) : 0.5;
+  });
+
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    const handleMusicChange = () => {
+      setBgMusic(localStorage.getItem('bgMusic') || '');
+      setBgMusicName(localStorage.getItem('bgMusicName') || '');
+    };
+    const handleVolChange = () => {
+      const vol = localStorage.getItem('bgVolume');
+      if (vol) setBgVolume(parseFloat(vol));
+    };
+    window.addEventListener('bgMusicChanged', handleMusicChange);
+    window.addEventListener('bgMusicVolumeChanged', handleVolChange);
+    return () => {
+      window.removeEventListener('bgMusicChanged', handleMusicChange);
+      window.removeEventListener('bgMusicVolumeChanged', handleVolChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = bgVolume;
+    }
+  }, [bgVolume]);
+
+  useEffect(() => {
+    const interactHandler = () => {
+      if (audioRef.current && bgMusic && audioRef.current.paused) {
+        audioRef.current.play().catch(e => console.log('Autoplay prevented:', e));
+      }
+    };
+    document.addEventListener('click', interactHandler);
+    return () => document.removeEventListener('click', interactHandler);
+  }, [bgMusic]);
+
   const [user, setUser] = useState<any>(null);
   const [isGuest, setIsGuest] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -359,6 +450,7 @@ const App: React.FC = () => {
     <ErrorBoundary>
       <LanguageProvider>
         <CallProvider>
+          {bgMusic && <audio ref={audioRef} src={bgMusic} autoPlay loop playsInline style={{ display: 'none' }} />}
           <CallScreen />
           <BrowserRouter>
             <div className="h-[100dvh] w-full flex flex-col">

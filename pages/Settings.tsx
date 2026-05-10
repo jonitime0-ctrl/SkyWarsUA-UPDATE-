@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { User, Mail, Palette, ChevronLeft, Bell, Camera, Save, Image, Globe, Shield, Lock, LogOut, Trash2, Settings as SettingsIcon, Phone } from 'lucide-react';
+import { User, Mail, Palette, ChevronLeft, Bell, Camera, Save, Image, Globe, Shield, Lock, LogOut, Trash2, Settings as SettingsIcon, Phone, Type, FileUp, X, Music, Volume2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../firebase';
 import { updateProfile } from 'firebase/auth';
@@ -51,6 +51,17 @@ export const Settings: React.FC<SettingsProps> = ({ theme, setTheme, brightness,
 
   // Interface states
   const [showNameEnabled, setShowNameEnabled] = useState(() => localStorage.getItem('showNameEnabled') !== 'false');
+  const [showChangeFont, setShowChangeFont] = useState(false);
+  const [tempUserFont, setTempUserFont] = useState(() => localStorage.getItem('userCustomFont') || '');
+  const [tempUserFontName, setTempUserFontName] = useState(() => localStorage.getItem('userCustomFontName') || '');
+
+  const [showMusicSettings, setShowMusicSettings] = useState(false);
+  const [tempMusicFile, setTempMusicFile] = useState(() => localStorage.getItem('bgMusic') || '');
+  const [tempMusicName, setTempMusicName] = useState(() => localStorage.getItem('bgMusicName') || '');
+  const [tempMusicVolume, setTempMusicVolume] = useState(() => {
+    const vol = localStorage.getItem('bgVolume');
+    return vol !== null ? parseFloat(vol) : 0.5;
+  });
 
   // Modal
   const [showEditData, setShowEditData] = useState(false);
@@ -611,6 +622,231 @@ export const Settings: React.FC<SettingsProps> = ({ theme, setTheme, brightness,
                  <ChevronLeft className="w-5 h-5 rotate-180" />
                </div>
             </div>
+
+            <div 
+              onClick={() => setShowChangeFont(!showChangeFont)}
+              className="flex justify-between items-center bg-slate-50/50 hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 p-4 rounded-[1.5rem] transition-colors cursor-pointer gap-4 group"
+            >
+               <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-[1rem] bg-indigo-500/10 text-indigo-500 flex items-center justify-center group-hover:rotate-12 transition-transform">
+                    <Type className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-[15px] uppercase tracking-wide text-slate-900 dark:text-white">Свій шрифт</span>
+                    <span className="text-[12px] text-slate-500 uppercase tracking-widest mt-0.5">Змінити шрифт сайту</span>
+                  </div>
+               </div>
+               <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center text-slate-500">
+                 <ChevronLeft className="w-5 h-5 rotate-180" />
+               </div>
+            </div>
+
+            {/* Change Font Dropdown */}
+            {showChangeFont && (
+               <div className="mt-4 p-6 border border-slate-200 dark:border-white/5 rounded-[1.5rem] bg-white dark:bg-[#0a0a0a] shadow-inner animate-in slide-in-from-top-4 duration-300">
+                  <h4 className="font-black text-lg mb-4 uppercase tracking-tight">Налаштування шрифту</h4>
+                  <p className="text-sm text-slate-500 mb-6">Ви можете завантажити свій шрифт (до 2 МБ) або вказати його власноруч. Він буде застосований одразу.</p>
+                  
+                  <div className="space-y-5">
+                     <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2 px-2">Завантажити файл (.ttf, .woff, .woff2)</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="file"
+                            id="customFontFileSettings"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (file.size > 2 * 1024 * 1024) {
+                                alert('Розмір файлу не повинен перевищувати 2MB');
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const base64 = event.target?.result as string;
+                                setTempUserFont(base64);
+                                setTempUserFontName(file.name);
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                            accept=".ttf,.woff,.woff2,font/ttf,font/woff,font/woff2"
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById('customFontFileSettings')?.click()}
+                            className="bg-slate-100 dark:bg-[#111] hover:bg-slate-200 dark:hover:bg-[#222] text-slate-700 dark:text-slate-300 px-4 py-3 rounded-xl font-bold flex flex-1 justify-center items-center gap-2 transition-colors border border-dashed border-slate-300 dark:border-slate-500"
+                          >
+                            <FileUp className="w-5 h-5" />
+                            Оглянути файли
+                          </button>
+                        </div>
+                     </div>
+                     
+                     {tempUserFontName && (
+                       <div className="flex items-center justify-between gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-4 py-3 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                         <span className="font-medium text-sm truncate">{tempUserFontName}</span>
+                         <button
+                           onClick={() => {
+                             setTempUserFont('');
+                             setTempUserFontName('');
+                             localStorage.removeItem('userCustomFont');
+                             localStorage.removeItem('userCustomFontName');
+                             window.dispatchEvent(new Event('userFontChanged'));
+                           }}
+                           className="hover:bg-indigo-200 dark:hover:bg-indigo-800 p-1 rounded-full text-indigo-600 dark:text-indigo-400 transition-colors shrink-0"
+                         >
+                           <X className="w-4 h-4" />
+                         </button>
+                       </div>
+                     )}
+
+                     <div className="flex gap-4 pt-4">
+                        <button 
+                           onClick={() => { setShowChangeFont(false); }}
+                           className="flex-1 py-4 rounded-[1.25rem] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
+                        >
+                           Закрити
+                        </button>
+                        <button 
+                           onClick={() => {
+                             localStorage.setItem('userCustomFont', tempUserFont);
+                             localStorage.setItem('userCustomFontName', tempUserFontName);
+                             window.dispatchEvent(new Event('userFontChanged'));
+                             setShowChangeFont(false);
+                           }}
+                           className="flex-1 py-4 rounded-[1.25rem] font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-lg shadow-indigo-500/25"
+                        >
+                           Застосувати
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            )}
+            
+            {/* Background Music */}
+            <div 
+              onClick={() => setShowMusicSettings(!showMusicSettings)}
+              className="flex justify-between items-center bg-slate-50/50 hover:bg-slate-50 dark:bg-white/5 dark:hover:bg-white/10 p-4 rounded-[1.5rem] transition-colors cursor-pointer gap-4 group mt-4"
+            >
+               <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-[1rem] bg-indigo-500/10 text-indigo-500 flex items-center justify-center group-hover:rotate-12 transition-transform">
+                    <Music className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-[15px] uppercase tracking-wide text-slate-900 dark:text-white">Фонова музика</span>
+                    <span className="text-[12px] text-slate-500 uppercase tracking-widest mt-0.5">Встановити музику сайту</span>
+                  </div>
+               </div>
+               <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-white/10 flex items-center justify-center text-slate-500">
+                 <ChevronLeft className={`w-5 h-5 transition-transform ${showMusicSettings ? '-rotate-90' : 'rotate-180'}`} />
+               </div>
+            </div>
+
+            {/* Change Music Dropdown */}
+            {showMusicSettings && (
+               <div className="mt-4 p-6 border border-slate-200 dark:border-white/5 rounded-[1.5rem] bg-white dark:bg-[#0a0a0a] shadow-inner animate-in slide-in-from-top-4 duration-300">
+                  <h4 className="font-black text-lg mb-4 uppercase tracking-tight">Налаштування музики</h4>
+                  <p className="text-sm text-slate-500 mb-6">Завантажте свій аудіофайл (до 4 МБ) .mp3 або .wav. Музика буде програватися на фоні.</p>
+                  
+                  <div className="space-y-5">
+                     <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2 px-2">Завантажити файл (.mp3, .wav)</label>
+                        <div className="flex items-center gap-4">
+                          <input
+                            type="file"
+                            id="customMusicFileSettings"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              if (file.size > 4 * 1024 * 1024) {
+                                alert('Розмір файлу не повинен перевищувати 4MB');
+                                return;
+                              }
+                              const reader = new FileReader();
+                              reader.onload = (event) => {
+                                const base64 = event.target?.result as string;
+                                setTempMusicFile(base64);
+                                setTempMusicName(file.name);
+                              };
+                              reader.readAsDataURL(file);
+                            }}
+                            accept=".mp3,.wav,audio/mpeg,audio/wav"
+                            className="hidden"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => document.getElementById('customMusicFileSettings')?.click()}
+                            className="bg-slate-100 dark:bg-[#111] hover:bg-slate-200 dark:hover:bg-[#222] text-slate-700 dark:text-slate-300 px-4 py-3 rounded-xl font-bold flex flex-1 justify-center items-center gap-2 transition-colors border border-dashed border-slate-300 dark:border-slate-500"
+                          >
+                            <FileUp className="w-5 h-5" />
+                            Оглянути файли
+                          </button>
+                        </div>
+                     </div>
+                     
+                     {tempMusicName && (
+                       <div className="flex items-center justify-between gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 px-4 py-3 rounded-xl border border-indigo-200 dark:border-indigo-800">
+                         <span className="font-medium text-sm truncate">{tempMusicName}</span>
+                         <button
+                           onClick={() => {
+                             setTempMusicFile('');
+                             setTempMusicName('');
+                             localStorage.removeItem('bgMusic');
+                             localStorage.removeItem('bgMusicName');
+                             window.dispatchEvent(new Event('bgMusicChanged'));
+                           }}
+                           className="hover:bg-indigo-200 dark:hover:bg-indigo-800 p-1 rounded-full text-indigo-600 dark:text-indigo-400 transition-colors shrink-0"
+                         >
+                           <X className="w-4 h-4" />
+                         </button>
+                       </div>
+                     )}
+
+                     <div>
+                        <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-2 px-2">
+                           <Volume2 className="w-4 h-4" /> Гучність: {Math.round(tempMusicVolume * 100)}%
+                        </label>
+                        <input
+                          type="range"
+                          min="0"
+                          max="1"
+                          step="0.01"
+                          value={tempMusicVolume}
+                          onChange={(e) => {
+                            const newVol = parseFloat(e.target.value);
+                            setTempMusicVolume(newVol);
+                            localStorage.setItem('bgVolume', newVol.toString());
+                            window.dispatchEvent(new Event('bgMusicVolumeChanged'));
+                          }}
+                          className="w-full accent-indigo-600"
+                        />
+                     </div>
+
+                     <div className="flex gap-4 pt-4">
+                        <button 
+                           onClick={() => { setShowMusicSettings(false); }}
+                           className="flex-1 py-4 rounded-[1.25rem] font-bold bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 transition-colors"
+                        >
+                           Закрити
+                        </button>
+                        <button 
+                           onClick={() => {
+                             localStorage.setItem('bgMusic', tempMusicFile);
+                             localStorage.setItem('bgMusicName', tempMusicName);
+                             localStorage.setItem('bgVolume', tempMusicVolume.toString());
+                             window.dispatchEvent(new Event('bgMusicChanged'));
+                             window.dispatchEvent(new Event('bgMusicVolumeChanged'));
+                             setShowMusicSettings(false);
+                           }}
+                           className="flex-1 py-4 rounded-[1.25rem] font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-colors shadow-lg shadow-indigo-500/25"
+                        >
+                           Застосувати
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            )}
             
           </div>
         </section>
